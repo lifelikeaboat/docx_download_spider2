@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+# Created on 2019-07-01 01:11:12
+# Project: dlwmw
+
+from pyspider.libs.base_handler import *
+import re
+import time
+class Handler(BaseHandler):
+    crawl_config = {
+    }
+
+    @every(minutes=24 * 60)
+    def on_start(self):
+        postdata={
+            'ComeUrl':'http://www.dlwmw.cn/',
+            'CookieDate':3,
+            'Login':'+%B5%C7%C2%BC+',
+            'Password':'467948759',
+            'UserName':'1169525055'
+        }
+        self.crawl('http://www.dlwmw.cn/User/dlwmwUser_ChkLogin.asp', callback=self.index_page,method='POST',data=postdata)
+
+    @config(age=10 * 24 * 60 * 60)
+    def index_page(self, response):
+        cookie=response.cookies        
+        self.crawl('http://www.dlwmw.cn/dlwmwso/search.asp?keyword=%B9%A4%D7%F7%D7%DC%BD%E1&page=1', callback=self.next_page,cookies=cookie)
+
+    def next_page(self,response):
+        cookie=response.cookies
+        for url in response.doc('span a').items():
+            self.crawl(url.attr.href,callback=self.detail_page,cookies=cookie)
+            time.sleep(0.4)
+        nextpage=re.findall('下一页',response.doc('td').text())
+        if nextpage!=[]:
+            nextpageurl=response.url
+            page=int(nextpageurl[-1:])
+            page=page+1
+            nextpageurl=nextpageurl[:-1]+str(page)
+            self.crawl(nextpageurl, callback=self.next_page,cookies=cookie)
+    @config(priority=2)
+    def detail_page(self, response):
+        content=response.doc('font#zoom').text()
+        title=response.doc('b font').text()
+        if title=='':
+            content=response.doc('.main_tdbg_760 td').text()
+            title=response.doc('.main_ArticleTitle').text()[:-6]
+            if re.search('var',content)!=None: 
+                content=re.split('var',content,1)  
+                content=str(content[0]) 
+        if content!='':
+            path='/home/spider/dlwmw-test/'+title+'.doc'
+        with open(path,'w') as f:
+            f.write(title)
+            f.write(content)
+            time.sleep(2)
+        return {
+            "url": response.url,
+            "title": title
+        }
+    def converttoGB(content,title):
+        try:
+            content_GB=content.encode('GB2312')
+            title_GB=title.encode('GB2312')
+            with open(path,'wb') as f:
+                f.write(title_GB)
+                f.write(content_GB)
+            time.sleep(2)
+        except UnicodeEncodeError:
+            with open('/home/spider/dlwmw-u/'+title+'.doc','w') as f:
+                f.write(title)
+                f.write(content)
+            time.sleep(2)
