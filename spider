@@ -6,6 +6,20 @@
 from pyspider.libs.base_handler import *
 import re
 import time
+def converttoGB(content,title):
+    path='/home/spider/dlwmw-test/'+title+'.doc'
+    try:
+        content_GB=content.encode('GB2312')
+        title_GB=title.encode('GB2312')
+        with open(path,'wb') as f:
+            f.write(title_GB)
+            f.write(content_GB)
+        time.sleep(2)
+    except UnicodeEncodeError:
+        with open('/home/spider/dlwmw-u/'+title+'.doc','w') as f:
+            f.write(title)
+            f.write(content)
+        time.sleep(2)
 class Handler(BaseHandler):
     crawl_config = {
     }
@@ -49,25 +63,12 @@ class Handler(BaseHandler):
                 content=re.split('var',content,1)  
                 content=str(content[0]) 
         if content!='':
-            path='/home/spider/dlwmw-test/'+title+'.doc'
-        with open(path,'w') as f:
-            f.write(title)
-            f.write(content)
-            time.sleep(2)
+            converttoGB(content,title)
+        #with open(path,'w') as f:
+        #    f.write(title)
+        #    f.write(content)
+        #    time.sleep(2)
         return {
             "url": response.url,
             "title": title
         }
-    def converttoGB(content,title):
-        try:
-            content_GB=content.encode('GB2312')
-            title_GB=title.encode('GB2312')
-            with open(path,'wb') as f:
-                f.write(title_GB)
-                f.write(content_GB)
-            time.sleep(2)
-        except UnicodeEncodeError:
-            with open('/home/spider/dlwmw-u/'+title+'.doc','w') as f:
-                f.write(title)
-                f.write(content)
-            time.sleep(2)
