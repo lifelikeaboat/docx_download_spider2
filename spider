@@ -7,16 +7,18 @@ from pyspider.libs.base_handler import *
 import re
 import time
 def converttoGB(content,title):
-    path='/home/spider/dlwmw-test/'+title+'.doc'
+    path='/home/spider/dlwmw-test/'+title+'.doc'  
     try:
         content_GB=content.encode('GB2312')
-        title_GB=title.encode('GB2312')
+        title_GB=title+'\r\n'
+        title_GB=title_GB.encode('GB2312')
         with open(path,'wb') as f:
             f.write(title_GB)
             f.write(content_GB)
         time.sleep(2)
     except UnicodeEncodeError:
         with open('/home/spider/dlwmw-u/'+title+'.doc','w') as f:
+            title=title+'\r\n'
             f.write(title)
             f.write(content)
         time.sleep(2)
@@ -44,7 +46,6 @@ class Handler(BaseHandler):
         cookie=response.cookies
         for url in response.doc('span a').items():
             self.crawl(url.attr.href,callback=self.detail_page,cookies=cookie)
-            time.sleep(0.4)
         nextpage=re.findall('下一页',response.doc('td').text())
         if nextpage!=[]:
             nextpageurl=response.url
@@ -56,13 +57,13 @@ class Handler(BaseHandler):
     def detail_page(self, response):
         content=response.doc('font#zoom').text()
         title=response.doc('b font').text()
-        if title=='':
+        if len(content)<20:
             content=response.doc('.main_tdbg_760 td').text()
             title=response.doc('.main_ArticleTitle').text()[:-6]
-            if re.search('var',content)!=None: 
-                content=re.split('var',content,1)  
-                content=str(content[0]) 
-        if content!='':
+        if re.search('var',content)!=None: 
+            content=re.split('var',content,1)  
+            content=str(content[0]) 
+        if len(content)>20:
             converttoGB(content,title)
         #with open(path,'w') as f:
         #    f.write(title)
