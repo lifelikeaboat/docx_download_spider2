@@ -6,7 +6,8 @@
 from pyspider.libs.base_handler import *
 import re
 import time
-def converttoGB(content,title):
+import Levenshtein
+def convert_to_GB(content,title):
     path='/home/spider/dlwmw-test/'+title+'.doc'  
     try:
         content_GB=content.encode('GB2312')
@@ -22,6 +23,15 @@ def converttoGB(content,title):
             f.write(title)
             f.write(content)
         time.sleep(2)
+
+def repeat_title_remove(title,content):
+    first_para=str(re.split('\n',content,1)[0])  
+    sim = Levenshtein.ratio(title, first_para)
+    if sim>0.6:
+        return str(re.split('\n',content,1)[1])
+    else:
+        return content
+
 class Handler(BaseHandler):
     crawl_config = {
     }
@@ -63,13 +73,16 @@ class Handler(BaseHandler):
         if re.search('var',content)!=None: 
             content=re.split('var',content,1)  
             content=str(content[0]) 
+        content=re.sub('\n\n','\n',content)
         if len(content)>20:
-            converttoGB(content,title)
+            content=repeat_title_remove(title,content)
+            convert_to_GB(content,title)
         #with open(path,'w') as f:
         #    f.write(title)
         #    f.write(content)
         #    time.sleep(2)
-        return {
-            "url": response.url,
-            "title": title
-        }
+            return {
+                "url": response.url,
+                "title": title,
+                'content':content
+            }
